@@ -1,0 +1,288 @@
+{
+  "name": "Lead Qualification Agent (Form Submissions)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Work with us",
+        "formDescription": "Provide your details below, and we'll be in touch!",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company website",
+              "placeholder": "Eg. https://example.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "Eg. example@mail.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What can we help you with?",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "06ac830c-9b4c-416d-b440-b7829ad86968",
+      "name": "On form submission",
+      "webhookId": "8127c53d-91ee-4a92-94ac-4437cc91f52e",
+      "notes": "ENTRY POINT — This is the public-facing form leads fill out. It collects Name, Company website, Email, and their request. Once you activate the workflow, copy the 'Test URL' or 'Production URL' from this node and share it with leads or embed it on your site. No setup needed.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-d7b62b.stack.tryrelevance.com/latest/studios/9e9d1a53-e7c1-4464-83ff-7e6450abfeef/trigger_webhook?project=0bb6b4f9259b-45b8-85ee-abc4b921a289",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"company_url\":\"{{ $json['Company website'] }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "24084bdc-ef97-4bca-9265-41af88bdc1a3",
+      "name": "HTTP Request",
+      "notes": "Sends the lead's company website URL to Relevance AI, which scrapes and researches the company. The URL below is pre-configured — only change it if you are using a different Relevance AI agent.\nIMPORTANT: Always use the v1 endpoint, NOT v2.\nURL: https://app.relevanceai.com/form/d7b62b/2024dcc2-fbb4-4260-92b3-edfce443909f?version=latest&primaryColor=%23000000",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v3.1:671b-cloud",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        448,
+        224
+      ],
+      "id": "7da761b4-be7e-4e5c-95ec-c8460aef4ba3",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "AIQMPUAxozJxGldE",
+          "name": "Ollama account Real"
+        }
+      },
+      "notes": "SETUP REQUIRED — Connect your Ollama credential here.\n1. Go to Settings > Credentials > Add > Ollama.\n2. Set Base URL to: http://localhost:11434 (or your Ollama server address).\n3. Ensure the model is available: run 'ollama pull deepseek-v3.1:671b-cloud' in your terminal.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
+        "subject": "Thanks for your intrust",
+        "emailType": "text",
+        "message": "=Hi {{ $('On form submission').item.json.Name }},\n\nThanks for your interest in Big Boy Recruitment services! AS we specialze in recruitment for software businesses such as SaaS and development agencies, we're not a good fit for you based on your company's industry.\n\nPlease let me know if you'd like us to connect you with one of our partners who specialzies in dealing with your needs.\n\nCheers,\n\nVirus\nHead of Sales, Big Boy Recruits (BBR)\nDallas, TX",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        224
+      ],
+      "id": "db124871-5085-46b2-8818-30baa2aa20c3",
+      "name": "Send a message in Gmail",
+      "webhookId": "95a57b09-f14f-42bb-9d74-bcea1e996cfd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zn8Vq83UTMQkpBEs",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "SETUP REQUIRED — Sends a rejection email to leads who do not qualify.\n1. Connect your Gmail OAuth2 credential.\n2. The recipient email is taken automatically from the form submission — no change needed.\n3. Optionally update the email body to match your branding.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "description": "If the lead is qualified to work with Big Boy Recruits (e.g., they operate a software-based business such as SaaS companies or development agencies), then trigger this tool and send the lead data in the following format.\n\ncompany_information is clear, concise, and structured, summarizing key details such as industry, services/products, target market, and any notable context (2–4 lines maximum)\n (The data in this is dummy, and you should replace it with the correct data):\n{\n  \"name\": \"Full name of the lead\",\n  \"email\": \"Lead's email address\",\n  \"message\": \"Brief description of their requirement or request\",\n  \"qualified\": true,\n  \"company_information\": \"Short structured summary: Industry | Services/Products | Target Market | Key Notes\"\n}",
+        "workflowId": {
+          "__rl": true,
+          "value": "co2JvIVY0eBfFT0H",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/co2JvIVY0eBfFT0H",
+          "cachedResultName": "Qualified Lead Classifier AND Notifier"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Qualified": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Qualified', `If the lead is qualified based on our criteria, set it to true; else, set it to false`, 'boolean') }}",
+            "Name": "={{ $('On form submission').item.json.Name }}",
+            "Email": "={{ $('On form submission').item.json.Email }}",
+            "Message": "={{ $('On form submission').item.json['What can we help you with?'] }}",
+            "Company info": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Company_info', `A short summary of the company details and the industry in which they are`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Company info",
+              "displayName": "Company info",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Qualified",
+              "displayName": "Qualified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        224
+      ],
+      "id": "dc2c2f68-77f5-4342-b792-1e13c4c9eee6",
+      "name": "Call 'Qualified Lead Classifier AND Notifier'",
+      "notesInFlow": true,
+      "notes": "SETUP REQUIRED — Links this workflow to the sub-workflow.\n1. Import 'Qualified Lead Classifier AND Notifier' first.\n2. Open this node and set the Workflow field to your imported sub-workflow (search by name or paste the Workflow ID from its URL).\n3. The input fields (Name, Email, Message, Company info, Qualified) are mapped automatically."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an inbound lead qualification agent. Your job is to analyze the form submission and company research provided and decide whether they are qualified to work with Big Boy Recruits, a Dallas based recruitment firm.\n\nBig Boy Recruits specializes in IT and tech talent placements. We are specialists in capturing talent post liquidiation and can therefore provide talent to our clients as we hit the market. \n\nWe only work with Software based businesses, e.g. SaaS companies or development agencies. These companies are willing to pay much more developers than your average marketing company or local business, therefore we only work with them.\n\nYour job is to determine if the lead you are provided with is a good fit for Big Boy Recruits, and if so call the 'lead_is_qualified' tool and send the lead information to it. If the lead is not qualified, then you must trigger the gmail send email tool for us to respond to them letting them know we are unable to help them.\n\nHere is the lead information for you to analyze:\nName: {{ $('On form submission').item.json.Name }}\nCompany URL: {{ $('On form submission').item.json['Company website'] }}\nMessage/Request: {{ $('On form submission').item.json['What can we help you with?'] }}\nCompany Research (scraped from their website): {{ $json.company_information_answer }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        512,
+        0
+      ],
+      "id": "9079e55a-756a-4e5f-9731-a22373438255",
+      "name": "AI Agent",
+      "notes": "Core qualification agent. Analyzes the form submission and Relevance AI company research, then decides if the lead qualifies. If qualified → calls the 'Qualified Lead Classifier AND Notifier' sub-workflow. If not → uses the Gmail tool to send a rejection email. No setup needed here.",
+      "notesInFlow": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Qualified Lead Classifier AND Notifier'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ee3c8813-880c-4f12-82bb-e27aff8302fc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c1ff5cc8ccaa4d6224655dc765bfbcde69864ac2bad5c0ea50f770ed53c7c78"
+  },
+  "id": "PHnOqQuj3TaCVcKv",
+  "tags": [],
+  "description": "MAIN WORKFLOW — Import and activate this AFTER importing and activating 'Qualified Lead Classifier AND Notifier'.\n\nSETUP STEPS:\n1. In the 'HTTP Request' node: the URL is already set to the Relevance AI company researcher. If you are using a different Relevance AI agent, update the URL. Use the v1 endpoint, NOT v2.\n   URL: https://app.relevanceai.com/form/d7b62b/2024dcc2-fbb4-4260-92b3-edfce443909f?version=latest&primaryColor=%23000000\n2. In the 'Ollama Chat Model' node: connect your Ollama credential (base URL: http://localhost:11434). Ensure the deepseek-v3.1:671b-cloud model is running.\n3. In the 'Send a message in Gmail' tool node: connect your Gmail OAuth2 credential (used to send rejection emails to unqualified leads).\n4. In the 'Call Qualified Lead Classifier AND Notifier' tool node: set the Workflow ID to match the ID of your imported sub-workflow.\n5. Activate this workflow. Copy the Form Trigger URL from the 'On form submission' node and share it or embed it on your website."
+}

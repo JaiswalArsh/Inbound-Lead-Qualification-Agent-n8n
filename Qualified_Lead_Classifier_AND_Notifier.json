@@ -1,0 +1,289 @@
+{
+  "name": "Qualified Lead Classifier AND Notifier",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Name"
+            },
+            {
+              "name": "Email"
+            },
+            {
+              "name": "Qualified",
+              "type": "boolean"
+            },
+            {
+              "name": "Message"
+            },
+            {
+              "name": "Company info"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "90e4a349-b091-4d63-a87c-01b0487ab458",
+      "name": "When Executed by Another Workflow",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "notesInFlow": true,
+      "notes": "ENTRY POINT — Receives lead data from the main workflow. Expects 5 inputs: Name, Email, Message, Company info (string), Qualified (boolean). No setup needed here."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=We have a new inbound lead and we need you to classify it into either SaaS or development agency category.\n\nHere is the lead information:\nName: {{ $json.Name }}\nRequest: {{ $json.Message }}\nCompany Information: {{ $json['Company info'] }}\n\n\nIf the lead a SaaS company, output: 'SaaS'\nIf the lead is a development agency, output: 'Agency'\n\nOutput should be of one word",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f0dad2b5-a9df-4738-bfd5-a103e74c3024",
+      "name": "AI Agent",
+      "notes": "Classifies the qualified lead as either 'SaaS' or 'Agency' using the Ollama model. Outputs a single word. Powered by the Ollama Chat Model node below — no setup needed here.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v3.1:671b-cloud",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        304,
+        224
+      ],
+      "id": "553a0305-9a54-4b49-84f4-d86edd844b01",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "AIQMPUAxozJxGldE",
+          "name": "Ollama account Real"
+        }
+      },
+      "notes": "SETUP REQUIRED — Connect your Ollama credential here.\n1. Go to Settings > Credentials > Add > Ollama.\n2. Set Base URL to: http://localhost:11434 (or your Ollama server address).\n3. Ensure the model is available: run 'ollama pull deepseek-v3.1:671b-cloud' in your terminal.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8dba08fa-cc2c-492d-a1e0-d9323134d5a0",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "Agency",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        0
+      ],
+      "id": "700c8842-980b-4702-b517-dc75ec0e6e26",
+      "name": "If1",
+      "notes": "Routes lead by AI classification. TRUE branch (output matches 'Agency') → Agency lead notification. FALSE branch → SaaS lead notification. Both branches then send the confirmation email to the lead. No setup needed.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "sendTo": "=arshjaiswal2005@gmail.com",
+        "subject": "New Agency lead",
+        "emailType": "text",
+        "message": "=New Agency Lead: {{ $('When Executed by Another Workflow').item.json['Company info'] }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        -80
+      ],
+      "id": "3019d4d3-26ae-4746-be5a-e6114ce267c7",
+      "name": "New Agency lead",
+      "webhookId": "b021f2e8-3151-4dd5-a209-10307551b7fc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zn8Vq83UTMQkpBEs",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "SETUP REQUIRED — Notifies your sales team of a new Agency lead.\n1. Connect your Gmail OAuth2 credential.\n2. Replace the 'sendTo' email address with your sales team's email.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "sendTo": "=arshjaiswal2005@gmail.com",
+        "subject": "New SaaS lead",
+        "emailType": "text",
+        "message": "=New SaaS Lead: {{ $('When Executed by Another Workflow').item.json['Company info'] }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        112
+      ],
+      "id": "7cd42387-9e6e-48d4-bb78-a3604b53b49b",
+      "name": "New SaaS lead",
+      "webhookId": "b021f2e8-3151-4dd5-a209-10307551b7fc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zn8Vq83UTMQkpBEs",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "SETUP REQUIRED — Notifies your sales team of a new SaaS lead.\n1. Connect your Gmail OAuth2 credential.\n2. Replace the 'sendTo' email address with your sales team's email.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('When Executed by Another Workflow').item.json.Email }}",
+        "subject": "Selection Confirmation – Lead Position",
+        "emailType": "text",
+        "message": "=Dear ,{{ $('When Executed by Another Workflow').item.json.Name }}\n\nWe are pleased to inform you that your request has been accepted. After careful consideration, we are delighted to confirm your selection as a new Lead.\n\nYour skills, dedication, and potential have made you a strong fit for this role, and we are confident that you will contribute significantly to the team’s success. We look forward to seeing your leadership in action and the positive impact you will bring.\n\nFurther details regarding your responsibilities and next steps will be shared with you shortly.\n\nCongratulations on your selection, and welcome to your new role!\n\nBest regards,\nVirus\nHead of Sales, Big Boy Recruits (BBR)\nDallas, TX",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        0
+      ],
+      "id": "020b32be-0cb5-4950-b726-fbf1dd697143",
+      "name": "Selection Confirmation – Lead Position",
+      "webhookId": "b021f2e8-3151-4dd5-a209-10307551b7fc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zn8Vq83UTMQkpBEs",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "SETUP REQUIRED — Sends a confirmation email to the qualified lead. The recipient is pulled automatically from the form submission.\n1. Connect your Gmail OAuth2 credential.\n2. Optionally update the email body and sign-off to match your branding.",
+      "notesInFlow": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "New Agency lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "New SaaS lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Agency lead": {
+      "main": [
+        [
+          {
+            "node": "Selection Confirmation – Lead Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New SaaS lead": {
+      "main": [
+        [
+          {
+            "node": "Selection Confirmation – Lead Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "18baf148-7a38-4d9b-b0f9-696322bf9ace",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c1ff5cc8ccaa4d6224655dc765bfbcde69864ac2bad5c0ea50f770ed53c7c78"
+  },
+  "id": "co2JvIVY0eBfFT0H",
+  "tags": [],
+  "description": "SUB-WORKFLOW — Do NOT activate this alone. It is triggered automatically by the 'Lead Qualification Agent (Form Submissions)' workflow when a lead is qualified.\n\nSETUP STEPS:\n1. Import this workflow AFTER importing 'Lead Qualification Agent (Form Submissions)'.\n2. In the 'Ollama Chat Model' node: connect your Ollama credential (base URL: http://localhost:11434). Ensure the deepseek-v3.1:671b-cloud model is pulled and running ('ollama pull deepseek-v3.1:671b-cloud').\n3. In 'New Agency lead' and 'New SaaS lead' Gmail nodes: replace the 'sendTo' email with your sales team's email.\n4. In the 'Selection Confirmation' Gmail node: connect your Gmail OAuth2 credential. The recipient email is pulled automatically from the form — no change needed.\n5. Copy this workflow's ID from the URL bar and paste it into the 'Call Qualified Lead Classifier AND Notifier' tool node in the main workflow.\n6. Activate this workflow BEFORE activating the main workflow."
+}
